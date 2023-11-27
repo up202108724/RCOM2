@@ -8,7 +8,7 @@ int main(int argc, int argv[]){
     }
     struct URL url;
     memset(&url, 0, sizeof(url));
-    if (parseFTP(argv[1], struct URL *url)!= 0 ){
+    if (parseFTP(argv[1], &url)!= 0 ){
         return -1;
     }
 
