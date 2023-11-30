@@ -150,3 +150,23 @@ int authenticate(int socket, char *user, char *password){
     return readResponse(socket,buf); //230 User logged in
 }
 
+int requestResource(int socket, char *resource){
+    char buf[MAX_LENGTH];
+    char resourceCommand[5+strlen(resource)+1];
+    sprintf(resourceCommand, "retr %s\n", resource);
+    write(socket, resourceCommand, strlen(resourceCommand));
+    return readResponse(socket,buf);
+}
+
+int getResource(int socketA, int socketB, char *resource){
+    FILE *fd = fopen(resource, "wb");
+    if(fd==NULL){exit(-1);}
+    char buf[MAX_LENGTH];
+    int bytes;
+    while(bytes=read(socketB, buf, MAX_LENGTH)>0){
+        if(fwrite(buf, 1, bytes, fd)<0){exit(-1);}
+    }
+    fclose(fd);
+    return readResponse(socketA,buf);
+}
+

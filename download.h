@@ -37,3 +37,9 @@ int parseFTP(char* input , struct URL *url);
 int readResponse(int socket, char *buf);
 
 int authenticate(int socket, char *user, char *password);
+
+
+
+int requestResource(int socket, char *resource);
+
+int getResource(int socketA, int socketB, char *resource);
