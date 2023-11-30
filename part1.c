@@ -1,4 +1,5 @@
-#include <download.h>
+#include "download.h"
+
 int sockfd;
 
 int createSocket(char *ip, int port){
@@ -57,5 +58,84 @@ int parseFTP(char *input, struct URL *url)
     printf("Host name  : %s\n", h->h_name);
     printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
 
+}
+
+int readResponse(int socket, char *buf){
+    char byte;
+    int i = 0;
+    int responseCode;
+    ResponseState state = START;
+    memset(buf, 0, MAX_LENGTH);
+    while (state != END)
+    {
+        if (read(socket, &byte, 1) < 0)
+        {
+            return -1;
+        }
+        switch (state)
+        {
+        case START:
+            if (byte == ' ')
+            {
+                state = SINGLE;
+            }
+            else if (byte == '-')
+            {
+                state = MULTIPLE;
+            }
+           else if (byte == '\n')
+            {
+                state = END;
+            }
+            else
+            {
+                buf[i++] = byte;
+            }
+            break;
+        case SINGLE:
+            if (byte == '\n')
+            {
+                state = END;
+            }
+            else
+            {
+                buf[i++] = byte;
+            }
+            break;
+        case MULTIPLE:
+            if (byte == '\n')
+            {
+                state = START;
+                i = 0;
+                memset(buf, 0, MAX_LENGTH);
+
+            }
+            else
+            {
+                buf[i++] = byte;
+            }
+            break;
+        case END:
+            break;
+        default:
+            break;
+        }
+    }
+    sscanf(buf, "%d", &responseCode);
+    return responseCode;
+}
+
+int authenticate(int socket, char *user, char *password){
+    char buf[MAX_LENGTH];
+    char userCommand[5+strlen(user)+1];
+    char passCommand[5+strlen(password)+1];
+    sprintf(userCommand, "user %s\n", user);
+    sprintf(passCommand, "pass %s\n", password);
+    
+    write(socket, userCommand, strlen(userCommand));
+    if(readResponse(socket,buf)!=331){exit(-1);} //331 User name okay, need password.
+    memset(buf, 0, MAX_LENGTH);
+    write(socket, passCommand, strlen(passCommand));
+    return readResponse(socket,buf); //230 User logged in
 }
 

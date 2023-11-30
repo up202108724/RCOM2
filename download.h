@@ -21,6 +21,18 @@ struct URL{
     char ip[MAX_LENGTH];
 };
 
+typedef enum {
+    START,
+    SINGLE,
+    MULTIPLE,
+    END
+} ResponseState;
+
+
 int createSocket(char *ip, int port);
 
 int parseFTP(char* input , struct URL *url);
+
+int readResponse(int socket, char *buf);
+
+int authenticate(int socket, char *user, char *password);
