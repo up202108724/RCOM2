@@ -14,6 +14,8 @@
 #define PASSIVE_REGEX   "%*[^(](%d,%d,%d,%d,%d,%d)%*[^\n$)]"
 
 #define RESPONSE_CODE_PASSIVE 227
+#define RESPONSE_CODE_READY_FOR_TRANSFER 150
+#define RESPONSE_CODE_TRANSFER_COMPLETE 226
 
 struct URL{
     char host[MAX_LENGTH];
@@ -38,7 +40,7 @@ int readResponse(int socket, char *buf);
 
 int authenticate(int socket, char *user, char *password);
 
-
+int passive_mode(const int socket ,char *ip, int port);
 
 int requestResource(int socket, char *resource);
 

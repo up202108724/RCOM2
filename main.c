@@ -26,7 +26,17 @@ int main(int argc, int argv[]){
     }
     int port;
     char ip[MAX_LENGTH];
-    if (passive_mode(socket, ip, port) != RESPONSE_CODE_PASSIVE){
+    if (passive_mode(socketA, ip, port) != RESPONSE_CODE_PASSIVE){
+        return -1;
+    }
+
+    if(requestResource(socketA, url.resource)!=RESPONSE_CODE_READY_FOR_TRANSFER){
+        printf("Error requesting resource\n");
+        return -1;
+    }
+
+    if(getResource(socketA, socketB, url.resource)!=RESPONSE_CODE_TRANSFER_COMPLETE){
+        printf("Error getting resource\n");
         return -1;
     }
 
