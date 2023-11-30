@@ -150,6 +150,7 @@ int authenticate(int socket, char *user, char *password){
     return readResponse(socket,buf); //230 User logged in
 }
 
+
 int requestResource(int socket, char *resource){
     char buf[MAX_LENGTH];
     char resourceCommand[5+strlen(resource)+1];
@@ -170,3 +171,12 @@ int getResource(int socketA, int socketB, char *resource){
     return readResponse(socketA,buf);
 }
 
+int close_connection(const int socketA, const int socketB){
+    char answer[MAX_LENGTH];
+    write(socketA, "quit\n", 5);
+    if(readResponse(socketA,answer)!=221){return -1;} //221 Service closing control connection.
+    memset(answer, 0, MAX_LENGTH);
+    write(socketB, "quit\n", 5);
+    if(readResponse(socketB,answer)!=221){return -1;} //221 Service closing control connection.
+    return 0;
+}
