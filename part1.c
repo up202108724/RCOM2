@@ -149,4 +149,12 @@ int authenticate(int socket, char *user, char *password){
     write(socket, passCommand, strlen(passCommand));
     return readResponse(socket,buf); //230 User logged in
 }
-
+int close_connection(const int socketA, const int socketB){
+    char answer[MAX_LENGTH];
+    write(socketA, "quit\n", 5);
+    if(readResponse(socketA,answer)!=221){return -1;} //221 Service closing control connection.
+    memset(answer, 0, MAX_LENGTH);
+    write(socketB, "quit\n", 5);
+    if(readResponse(socketB,answer)!=221){return -1;} //221 Service closing control connection.
+    return 0;
+}
