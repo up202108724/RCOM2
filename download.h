@@ -11,8 +11,9 @@
 #define MAX_LENGTH 500
 
 #define HOST_REGEX "%*[^/]//%[^/]"
+#define PASSIVE_REGEX   "%*[^(](%d,%d,%d,%d,%d,%d)%*[^\n$)]"
 
-
+#define RESPONSE_CODE_PASSIVE 227
 
 struct URL{
     char host[MAX_LENGTH];

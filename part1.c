@@ -59,7 +59,18 @@ int parseFTP(char *input, struct URL *url)
     printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
 
 }
-
+int passive_mode(const int socket ,char *ip, int port){
+    char answer[MAX_LENGTH];
+    int ip1, ip2, ip3, ip4, port1, port2;
+    if (readResponse(socket, answer) != RESPONSE_CODE_PASSIVE)
+    {
+        return -1;
+    }
+    sscanf(answer, PASSIVE_REGEX, &ip1, &ip2, &ip3, &ip4, &port1, &port2);
+    port = port1 * 256 + port2;
+    sprintf(ip, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
+    return RESPONSE_CODE_PASSIVE;
+}
 int readResponse(int socket, char *buf){
     char byte;
     int i = 0;
