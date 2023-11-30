@@ -19,6 +19,7 @@ struct URL{
     char user[MAX_LENGTH];
     char password[MAX_LENGTH];
     char ip[MAX_LENGTH];
+    char url_path[MAX_LENGTH];
 };
 
 int createSocket(char *ip, int port);

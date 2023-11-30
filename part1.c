@@ -1,4 +1,5 @@
-#include <download.h>
+#include "download.h"
+#include <pcre.h>
 int sockfd;
 
 int createSocket(char *ip, int port){
@@ -30,9 +31,81 @@ int createSocket(char *ip, int port){
     return 0;
 }
 
-int parseFTP(char *input, struct URL *url)
-{
-    //ftp://[<user>:<password>@]<host>/<url-path>
+int parse_ftp_url(const char *url_str, struct URL *url) {
+    const char *pattern = "(?i)ftp://(?:([^\\s:]+)(?::([^\\s@]+))?@)?([^/]+)(?:/([^\\s]+))?";
+    const char url_str;
+    int rc;
+    const int max_groups = 4;
+    int ovector[3 * (max_groups + 1)];  // (max_groups+1) * 3
+
+    pcre *re;
+    const char *error;
+    int erroffset;
+
+    re = pcre_compile(pattern, 0, &error, &erroffset, NULL);
+    if (re == NULL) {
+        fprintf(stderr, "Error in PCRE compilation at offset %d: %s\n", erroffset, error);
+        return;
+    }
+
+    rc = pcre_exec(re, NULL, url_str, strlen(url_str), 0, 0, ovector, sizeof(ovector) / sizeof(ovector[0]));
+
+    if (rc < 0) {
+        fprintf(stderr, "Error in PCRE execution: %d\n", rc);
+        pcre_free(re);
+        return;
+    }
+
+    if (rc > 0) {
+        int i;
+        for (i = 0; i < rc; ++i) {
+            int start = ovector[2 * i];
+            int end = ovector[2 * i + 1];
+
+            if (i == 1) {
+                if (start >= 0) {
+                    strncpy(url->user, url_str + start, end - start);
+                    url->user[end - start] = '\0';
+                } else {
+                    // User not provided, set default
+                    strcpy(url->user, "anonymous");
+                }
+            } else if (i == 2) {
+                if (start >= 0) {
+                    strncpy(url->password, url_str + start, end - start);
+                    url->password[end - start] = '\0';
+                } else {
+                    // Password not provided, set default
+                    strcpy(url->password, "password");
+                }
+            } else if (i == 3) {
+                strncpy(url->host, url_str + start, end - start);
+                sscanf(url->host, "%*d.%*d.%*d.%s", url->ip);
+            } else if (i == 4) {
+                if (start >= 0) {
+                    strncpy(url->url_path, url_str + start, end - start);
+                    url->url_path[end - start] = '\0';
+                } else {
+                    // URL path not provided
+                    strcpy(url->url_path, "");
+                }
+            }
+        }
+    
+
+    pcre_free(re);
+    struct hostent *h;
+    if(strlen(url->host)==0){return -1;}
+    if ((h = gethostbyname(url->user)) == NULL) {
+        return -1;
+    }
+
+    printf("Host name  : %s\n", h->h_name);
+    printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
+
+}
+ //ftp://[<user>:<password>@]<host>/<url-path>
+    /*
     regex_t re;
     regcomp(&re, "/" , 0);
     if(regexec(&re, input , 0, NULL ,0 )!=0){ return -1;}
@@ -48,14 +121,4 @@ int parseFTP(char *input, struct URL *url)
         sscanf(input, PASS_REGEX, *url->password);
 
     }
-    struct hostent *h;
-    if(strlen(url->host)==0){return -1;}
-    if ((h = gethostbyname(url->user)) == NULL) {
-        return -1;
-    }
-
-    printf("Host name  : %s\n", h->h_name);
-    printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
-
-}
-
+    */
