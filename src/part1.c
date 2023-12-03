@@ -35,6 +35,7 @@ int parseFTP(char *input, struct URL *url)
 {
     //ftp://[<user>:<password>@]<host>/<url-path>
     regex_t re;
+    struct hostent *h;
     regcomp(&re, "/" , 0);
     if(regexec(&re, input , 0, NULL ,0 )!=0){ return -1;}
     regcomp(&re, "@", 0 );
@@ -49,7 +50,6 @@ int parseFTP(char *input, struct URL *url)
         sscanf(input, PASS_REGEX, *url->password);
 
     }
-    struct hostent *h;
     if(strlen(url->host)==0){return -1;}
     if ((h = gethostbyname(url->user)) == NULL) {
         return -1;
