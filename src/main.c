@@ -1,6 +1,6 @@
 #include "download.h"
 
-int main(int argc, int argv[]){
+int main(int argc, char *argv[]){
     
     if(argc!=2){
         printf("Usage: ./download ftp://[<user>:<password>@]<host>/<url-path>\n");
@@ -13,7 +13,7 @@ int main(int argc, int argv[]){
     }
     char answer[MAX_LENGTH];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP
-    if (socketA < 0 || readResponse(socket, answer) != 220){ // 220 is the response code for connection established
+    if (socketA < 0 || readResponse(socketA, answer) != 220){ // 220 is the response code for connection established
         return -1;
     }
     if (authenticate(socketA, url.user, url.password) != 230){ // 230 is the response code for authentication successful
@@ -21,12 +21,12 @@ int main(int argc, int argv[]){
         return -1;
     }
     int socketB = createSocket(url.ip, 21);
-    if (socketA < 0 || readResponse(socket, answer) != 220){ // 220 is the response code for connection established
+    if (socketB < 0 || readResponse(socketB, answer) != 220){ // 220 is the response code for connection established
         return -1;
     }
-    int port;
+    int *port;
     char ip[MAX_LENGTH];
-    if (passive_mode(socketA, ip, port) != RESPONSE_CODE_PASSIVE){
+    if (passive_mode(socketA, ip, *port) != RESPONSE_CODE_PASSIVE){
         return -1;
     }
 

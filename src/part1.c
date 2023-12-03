@@ -9,7 +9,7 @@ int createSocket(char *ip, int port){
     size_t bytes;
     bzero((char*) &server_addr, sizeof(server_addr));
     server_addr.sin_family= AF_INET;
-    server_addr.sin_addr.s_addr= inet_addr(*ip);
+    server_addr.sin_addr.s_addr= inet_addr(ip);
     server_addr.sin_port= htons(port);
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM,0 ))< 0 ){
@@ -19,7 +19,7 @@ int createSocket(char *ip, int port){
     {
         return -1;
     };
-    ftp://[<user>:<password>@]<host>/<url-path>
+   // ftp://[<user>:<password>@]<host>/<url-path>
     bytes = write(sockfd, buf ,strlen(buf));
     
     if (bytes > 0){printf("Bytes escritos %ld \n ", bytes);}
@@ -55,11 +55,13 @@ int parseFTP(char *input, struct URL *url)
         return -1;
     }
 
-    printf("Host name  : %s\n", h->h_name);
-    printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
+    printf("Host name  : %s\n", url->host);
+   // printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
+
+   return 0;
 
 }
-int passive_mode(const int socket ,char *ip, int port){
+int passive_mode(const int socket ,char *ip, int *port){
     char answer[MAX_LENGTH];
     int ip1, ip2, ip3, ip4, port1, port2;
     if (readResponse(socket, answer) != RESPONSE_CODE_PASSIVE)
@@ -67,7 +69,7 @@ int passive_mode(const int socket ,char *ip, int port){
         return -1;
     }
     sscanf(answer, PASSIVE_REGEX, &ip1, &ip2, &ip3, &ip4, &port1, &port2);
-    port = port1 * 256 + port2;
+    *port = port1 * 256 + port2;
     sprintf(ip, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
     return RESPONSE_CODE_PASSIVE;
 }
@@ -164,8 +166,8 @@ int getResource(int socketA, int socketB, char *resource){
     if(fd==NULL){exit(-1);}
     char buf[MAX_LENGTH];
     int bytes;
-    while(bytes=read(socketB, buf, MAX_LENGTH)>0){
-        if(fwrite(buf, 1, bytes, fd)<0){exit(-1);}
+    while((bytes=read(socketB, buf, MAX_LENGTH))>0){
+        if(fwrite(buf, 1, bytes, fd)==0){exit(-1);}
     }
     fclose(fd);
     return readResponse(socketA,buf);

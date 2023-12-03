@@ -11,6 +11,9 @@
 #define MAX_LENGTH 500
 
 #define HOST_REGEX "%*[^/]//%[^/]"
+#define HOST_AT_REGEX   "%*[^/]//%*[^@]@%[^/]"
+#define USER_REGEX      "%*[^/]//%[^:/]"
+#define PASS_REGEX      "%*[^/]//%*[^:]:%[^@\n$]"
 #define PASSIVE_REGEX   "%*[^(](%d,%d,%d,%d,%d,%d)%*[^\n$)]"
 
 #define RESPONSE_CODE_PASSIVE 227
@@ -22,6 +25,7 @@ struct URL{
     char user[MAX_LENGTH];
     char password[MAX_LENGTH];
     char ip[MAX_LENGTH];
+    char resource[MAX_LENGTH];
 };
 
 typedef enum {
@@ -40,8 +44,10 @@ int readResponse(int socket, char *buf);
 
 int authenticate(int socket, char *user, char *password);
 
-int passive_mode(const int socket ,char *ip, int port);
+int passive_mode(const int socket ,char *ip, int *port);
 
 int requestResource(int socket, char *resource);
 
 int getResource(int socketA, int socketB, char *resource);
+
+int close_connection(int socketA, int socketB);
