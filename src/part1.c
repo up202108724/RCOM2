@@ -30,37 +30,45 @@ int createSocket(char *ip, int port){
     
     return 0;
 }
-
-int parseFTP(char *input, struct URL *url)
-{
-    //ftp://[<user>:<password>@]<host>/<url-path>
-    regex_t re;
-    struct hostent *h;
-    regcomp(&re, "/" , 0);
-    if(regexec(&re, input , 0, NULL ,0 )!=0){ return -1;}
-    regcomp(&re, "@", 0 );
-    if(regexec(&re,input , 0, NULL, 0)!=0){ //ftp://<host>/<url-path>
-        sscanf(input, HOST_REGEX, url->host);
+int parseFTP(char *input, struct URL *url) {
+    char ftp_regex[] = "ftp://([^:]+):([^@]+)@([^/]+)/(.+)";
+    char ftp_generic_regex[] = "ftp://([^/]+)/(.+)";
+    regex_t ftp_regex_compiled, ftp_generic_regex_compiled;
+    regcomp(&ftp_regex_compiled, ftp_regex, REG_EXTENDED);
+    regcomp(&ftp_generic_regex_compiled, ftp_generic_regex, REG_EXTENDED);
+    regmatch_t matches[6];
+    if (regexec(&ftp_regex_compiled, input, 6, matches, 0) == 0) {
+        if (matches[1].rm_so != -1) {
+            strncpy(url->user, input + matches[1].rm_so, matches[1].rm_eo - matches[1].rm_so);
+            url->user[matches[1].rm_eo - matches[1].rm_so] = '\0';
+        }
+        if (matches[2].rm_so != -1) {
+            strncpy(url->password, input + matches[2].rm_so, matches[2].rm_eo - matches[2].rm_so);
+            url->password[matches[2].rm_eo - matches[2].rm_so] = '\0';
+        }
+        strncpy(url->host, input + matches[3].rm_so, matches[3].rm_eo - matches[3].rm_so);
+        url->host[matches[3].rm_eo - matches[3].rm_so] = '\0';
+        strncpy(url->resource, input + matches[4].rm_so, matches[4].rm_eo - matches[4].rm_so);
+        url->resource[matches[4].rm_eo - matches[4].rm_so] = '\0';
+    } else if (regexec(&ftp_generic_regex_compiled, input, 4, matches, 0) == 0) {
         strcpy(url->user, "anonymous");
         strcpy(url->password, "password");
+        strncpy(url->host, input + matches[1].rm_so, matches[1].rm_eo - matches[1].rm_so);
+        url->host[matches[1].rm_eo - matches[1].rm_so] = '\0';
+        strncpy(url->resource, input + matches[2].rm_so, matches[2].rm_eo - matches[2].rm_so);
+        url->resource[matches[2].rm_eo - matches[2].rm_so] = '\0';
     }
-    else{
-        sscanf(input, HOST_AT_REGEX, *url->host);
-        sscanf(input, USER_REGEX, *url->user);
-        sscanf(input, PASS_REGEX, *url->password);
-
+    else {
+        regfree(&ftp_regex_compiled);
+        regfree(&ftp_generic_regex_compiled);
+        return -1;  
     }
-    if(strlen(url->host)==0){return -1;}
-    if ((h = gethostbyname(url->user)) == NULL) {
-        return -1;
-    }
-
-    printf("Host name  : %s\n", url->host);
-   // printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
-
-   return 0;
-
+    regfree(&ftp_regex_compiled);
+    regfree(&ftp_generic_regex_compiled);
+    return 0;
 }
+
+
 int passive_mode(const int socket ,char *ip, int *port){
     char answer[MAX_LENGTH];
     int ip1, ip2, ip3, ip4, port1, port2;
@@ -167,7 +175,7 @@ int getResource(int socketA, int socketB, char *resource){
     char buf[MAX_LENGTH];
     int bytes;
     while((bytes=read(socketB, buf, MAX_LENGTH))>0){
-        if(fwrite(buf, 1, bytes, fd)==0){exit(-1);}
+        if(fwrite(buf, 1, bytes, fd)==0){return -1;}
     }
     fclose(fd);
     return readResponse(socketA,buf);

@@ -10,10 +10,6 @@
 #define BAR "/"
 #define MAX_LENGTH 500
 
-#define HOST_REGEX "%*[^/]//%[^/]"
-#define HOST_AT_REGEX   "%*[^/]//%*[^@]@%[^/]"
-#define USER_REGEX      "%*[^/]//%[^:/]"
-#define PASS_REGEX      "%*[^/]//%*[^:]:%[^@\n$]"
 #define PASSIVE_REGEX   "%*[^(](%d,%d,%d,%d,%d,%d)%*[^\n$)]"
 
 #define RESPONSE_CODE_PASSIVE 227
