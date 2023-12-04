@@ -9,12 +9,7 @@ int main(int argc, char *argv[]){
     struct URL url;
     memset(&url, 0, sizeof(url));
     if (parseFTP(argv[1], &url)!= 0 ){
-        return -1;
-    }
-    struct hostent *h;
-    if ((h = gethostbyname(url.host)) == NULL) {
-        herror("gethostbyname()");
-        exit(-1);
+        exit (-1);
     }
     char answer[MAX_LENGTH];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP

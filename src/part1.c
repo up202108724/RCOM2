@@ -1,4 +1,4 @@
-#include "download.h"
+#include "../include/download.h"
 
 int sockfd;
 
@@ -63,6 +63,12 @@ int parseFTP(char *input, struct URL *url) {
         regfree(&ftp_generic_regex_compiled);
         return -1;  
     }
+    struct hostent *h;
+    if ((h = gethostbyname(url->host)) == NULL) {
+        herror("gethostbyname()");
+        return -1;
+    }
+    strcpy(url->ip, inet_ntoa(*((struct in_addr *) h->h_addr)));
     regfree(&ftp_regex_compiled);
     regfree(&ftp_generic_regex_compiled);
     return 0;
