@@ -11,36 +11,41 @@ int main(int argc, char *argv[]){
     if (parseFTP(argv[1], &url)!= 0 ){
         return -1;
     }
+    struct hostent *h;
+    if ((h = gethostbyname(url.host)) == NULL) {
+        herror("gethostbyname()");
+        exit(-1);
+    }
     char answer[MAX_LENGTH];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP
     if (socketA < 0 || readResponse(socketA, answer) != 220){ // 220 is the response code for connection established
-        return -1;
+        exit(-1);
     }
     if (authenticate(socketA, url.user, url.password) != 230){ // 230 is the response code for authentication successful
         printf("Authentication failed, user and password not matching\n");
-        return -1;
+        exit(-1);
     }
     int socketB = createSocket(url.ip, 21);
     if (socketB < 0 || readResponse(socketB, answer) != 220){ // 220 is the response code for connection established
-        return -1;
+        exit(-1);
     }
     int *port;
     char ip[MAX_LENGTH];
     if (passive_mode(socketA, ip, *port) != RESPONSE_CODE_PASSIVE){
-        return -1;
+        exit(-1);
     }
 
     if(requestResource(socketA, url.resource)!=RESPONSE_CODE_READY_FOR_TRANSFER){
         printf("Error requesting resource\n");
-        return -1;
+        exit(-1);
     }
 
     if(getResource(socketA, socketB, url.resource)!=RESPONSE_CODE_TRANSFER_COMPLETE){
         printf("Error getting resource\n");
-        return -1;
+        exit(-1);
     }
 
     if (close_connection(socketA, socketB)){
-        return -1;
+        exit(-1);
     }
 }
