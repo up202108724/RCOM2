@@ -1,20 +1,16 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall
+
 SRC = src/
 INCLUDE = include/
 BIN = bin/
 
-.PHONY: transfer
-transfer: $(BIN)part1
+.PHONY: downloader
+downloader: $(SRC)/download.c
+	$(CC) $(CFLAGS) -o download $^
 
-$(BIN)part1: | $(BIN)
-	$(CC) $(CFLAGS) -I$(INCLUDE) -o $@ $(SRC)main.c $(SRC)part1.c
-
-$(BIN):
-	mkdir -p $(BIN)
-
+.PHONY: clean
 clean:
-	rm -rf $(BIN)
-
+	rm -rf download
 
 
