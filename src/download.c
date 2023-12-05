@@ -229,9 +229,9 @@ int main(int argc, char *argv[]){
     if (socketB < 0 || readResponse(socketB, answer) != 220){ // 220 is the response code for connection established
         exit(-1);
     }
-    int *port;
+    int port;
     char ip[MAX_LENGTH];
-    if (passive_mode(socketA, ip, *port) != RESPONSE_CODE_PASSIVE){
+    if (passive_mode(socketA, ip, &port) != RESPONSE_CODE_PASSIVE){
         exit(-1);
     }
 
