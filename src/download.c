@@ -26,8 +26,6 @@ int createSocket(char *ip, int port){
     
     else {return -1;}
     
-    if (close(sockfd) < 0){return -1;}
-    
     return 0;
 }
 int parseFTP(char *input, struct URL *url) {
@@ -64,6 +62,10 @@ int parseFTP(char *input, struct URL *url) {
         return -1;  
     }
     struct hostent *h;
+    printf("Host: %s\n", url->host);
+    printf("User: %s\n", url->user);
+    printf("Resource: %s\n", url->resource);
+    printf("Password: %s\n", url->password);
     if ((h = gethostbyname(url->host)) == NULL) {
         herror("gethostbyname()");
         return -1;
@@ -93,29 +95,33 @@ int readResponse(int socket, char *buf){
     int responseCode;
     ResponseState state = START;
     memset(buf, 0, MAX_LENGTH);
+    printf("Reading response\n");
     while (state != END)
     {
-        if (read(socket, &byte, 1) < 0)
-        {
-            return -1;
-        }
+        printf("Reading byte\n");
+        read(socket, &byte, 1);
+        printf("Byte: %c\n", byte);
         switch (state)
         {
         case START:
             if (byte == ' ')
             {
+                printf("Space\n");
                 state = SINGLE;
             }
             else if (byte == '-')
-            {
+            { 
+                printf("Dash\n");
                 state = MULTIPLE;
             }
            else if (byte == '\n')
             {
+                printf("Newline\n");
                 state = END;
             }
             else
             {
+                printf("Other\n");
                 buf[i++] = byte;
             }
             break;
@@ -147,7 +153,7 @@ int readResponse(int socket, char *buf){
         default:
             break;
         }
-    }
+    }  
     sscanf(buf, "%d", &responseCode);
     return responseCode;
 }
@@ -210,10 +216,12 @@ int main(int argc, char *argv[]){
     }
     char answer[MAX_LENGTH];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP
-    if (socketA < 0 || readResponse(socketA, answer) != 220){ // 220 is the response code for connection established
+    printf("SocketA: %d\n", socketA);
+    printf("Sockfd: %d\n", sockfd);
+    if (socketA < 0 || readResponse(sockfd, answer) != 220){ // 220 is the response code for connection established
         exit(-1);
     }
-    if (authenticate(socketA, url.user, url.password) != 230){ // 230 is the response code for authentication successful
+    if (authenticate(sockfd, url.user, url.password) != 230){ // 230 is the response code for authentication successful
         printf("Authentication failed, user and password not matching\n");
         exit(-1);
     }
@@ -236,7 +244,7 @@ int main(int argc, char *argv[]){
         printf("Error getting resource\n");
         exit(-1);
     }
-
+    printf("Resource downloaded successfully\n");
     if (close_connection(socketA, socketB)){
         exit(-1);
     }
