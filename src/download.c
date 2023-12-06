@@ -1,9 +1,10 @@
 #include "../include/download.h"
 
-int sockfd;
+
 
 int createSocket(char *ip, int port){
 
+    int sockfd;
     struct sockaddr_in server_addr;
     char buf[] = "Mensagem de teste na travessia da pilha TCP/IP\n";
     size_t bytes;
@@ -26,7 +27,7 @@ int createSocket(char *ip, int port){
     
     else {return -1;}
     
-    return 0;
+    return sockfd;
 }
 int parseFTP(char *input, struct URL *url) {
     char ftp_regex[] = "ftp://([^:]+):([^@]+)@([^/]+)/(.+)";
@@ -155,6 +156,7 @@ int readResponse(int socket, char *buf){
         }
     }  
     sscanf(buf, "%d", &responseCode);
+    printf("Buf: %s\n", buf);
     return responseCode;
 }
 
@@ -164,7 +166,8 @@ int authenticate(int socket, char *user, char *password){
     char passCommand[5+strlen(password)+1];
     sprintf(userCommand, "user %s\n", user);
     sprintf(passCommand, "pass %s\n", password);
-    
+    printf("User command: %s\n", userCommand);
+    printf("Socket: %d\n", socket);
     write(socket, userCommand, strlen(userCommand));
     if(readResponse(socket,buf)!=331){exit(-1);} //331 User name okay, need password.
     memset(buf, 0, MAX_LENGTH);
@@ -217,21 +220,26 @@ int main(int argc, char *argv[]){
     char answer[MAX_LENGTH];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP
     printf("SocketA: %d\n", socketA);
-    printf("Sockfd: %d\n", sockfd);
-    if (socketA < 0 || readResponse(sockfd, answer) != 220){ // 220 is the response code for connection established
+    if (socketA < 0 || readResponse(socketA, answer) != 220){
+        printf("Error creating socket\n"); // 220 is the response code for connection established
         exit(-1);
     }
-    if (authenticate(sockfd, url.user, url.password) != 230){ // 230 is the response code for authentication successful
+    printf("Print going to authenticate\n");
+    printf("User: %s\n", url.user);
+    printf("Password: %s\n", url.password);
+    if (authenticate(socketA, url.user, url.password) != 230){ // 230 is the response code for authentication successful
         printf("Authentication failed, user and password not matching\n");
-        exit(-1);
-    }
-    int socketB = createSocket(url.ip, 21);
-    if (socketB < 0 || readResponse(socketB, answer) != 220){ // 220 is the response code for connection established
         exit(-1);
     }
     int port;
     char ip[MAX_LENGTH];
     if (passive_mode(socketA, ip, &port) != RESPONSE_CODE_PASSIVE){
+        exit(-1);
+    }
+
+    int socketB = createSocket(ip, port);
+    printf("SocketB: %d\n", socketB);
+    if (socketB < 0 || readResponse(socketB, answer) != 220){ // 220 is the response code for connection established
         exit(-1);
     }
 
