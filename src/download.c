@@ -6,8 +6,6 @@ int createSocket(char *ip, int port){
 
     int sockfd;
     struct sockaddr_in server_addr;
-    char buf[] = "Mensagem de teste na travessia da pilha TCP/IP\n";
-    size_t bytes;
     bzero((char*) &server_addr, sizeof(server_addr));
     server_addr.sin_family= AF_INET;
     server_addr.sin_addr.s_addr= inet_addr(ip);
@@ -21,11 +19,6 @@ int createSocket(char *ip, int port){
         return -1;
     };
    // ftp://[<user>:<password>@]<host>/<url-path>
-    bytes = write(sockfd, buf ,strlen(buf));
-    
-    if (bytes > 0){printf("Bytes escritos %ld \n ", bytes);}
-    
-    else {return -1;}
     
     return sockfd;
 }
@@ -81,6 +74,7 @@ int parseFTP(char *input, struct URL *url) {
 int passive_mode(const int socket ,char *ip, int *port){
     char answer[MAX_LENGTH];
     int ip1, ip2, ip3, ip4, port1, port2;
+    write(socket, "pasv\n", 5);
     if (readResponse(socket, answer) != RESPONSE_CODE_PASSIVE)
     {
         return -1;
@@ -231,15 +225,17 @@ int main(int argc, char *argv[]){
         printf("Authentication failed, user and password not matching\n");
         exit(-1);
     }
+    printf("Print going to passive mode\n");
     int port;
     char ip[MAX_LENGTH];
     if (passive_mode(socketA, ip, &port) != RESPONSE_CODE_PASSIVE){
         exit(-1);
     }
-
+    printf("Ip: %s\n", ip);
+    printf("Port: %d\n", port);
     int socketB = createSocket(ip, port);
     printf("SocketB: %d\n", socketB);
-    if (socketB < 0 || readResponse(socketB, answer) != 220){ // 220 is the response code for connection established
+    if (socketB < 0 ){ // 220 is the response code for connection established
         exit(-1);
     }
 
