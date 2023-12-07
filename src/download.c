@@ -12,11 +12,11 @@ int createSocket(char *ip, int port){
     server_addr.sin_port= htons(port);
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM,0 ))< 0 ){
-        return -1;
+        exit(-1);
     }
     if (connect(sockfd, (struct sockaddr*)& server_addr, sizeof(server_addr)) < 0)
     {
-        return -1;
+        exit(-1);
     };
    // ftp://[<user>:<password>@]<host>/<url-path>
     
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]){
     
     if(argc!=2){
         printf("Usage: ./download ftp://[<user>:<password>@]<host>/<url-path>\n");
-        return -1;
+        exit(-1);
     }
     struct URL url;
     memset(&url, 0, sizeof(url));
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]){
     char answer[MAX_LENGTH];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP
     printf("SocketA: %d\n", socketA);
-    if (socketA < 0 || readResponse(socketA, answer) != 220){
+    if (readResponse(socketA, answer) != 220){
         printf("Error creating socket\n"); // 220 is the response code for connection established
         exit(-1);
     }
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]){
     }
     printf("Print going to passive mode\n");
     int port;
-    char ip[MAX_LENGTH];
+    char ip[16];
     if (passive_mode(socketA, ip, &port) != RESPONSE_CODE_PASSIVE){
         exit(-1);
     }
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]){
     printf("Port: %d\n", port);
     int socketB = createSocket(ip, port);
     printf("SocketB: %d\n", socketB);
-    if (socketB < 0 ){ // 220 is the response code for connection established
+    if (socketB < 0 ){ 
         exit(-1);
     }
 
@@ -249,7 +249,16 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
     printf("Resource downloaded successfully\n");
-    if (close_connection(socketA, socketB)){
+
+    if (close(socketA)<0) {
+        perror("close()");
         exit(-1);
     }
+
+    if (close(socketB)<0) {
+        perror("close()");
+        exit(-1);
+    }
+    printf("Connection closed\n");
+    return 0;
 }
