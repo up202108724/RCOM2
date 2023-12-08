@@ -180,7 +180,6 @@ int requestResource(int socket, char *resource){
 
 int getResource(int socketA, int socketB, char *resource){
     FILE *fd = fopen(resource, "wb");
-    if(fd==NULL){exit(-1);}
     char buf[MAX_LENGTH];
     int bytes;
     while((bytes=read(socketB, buf, MAX_LENGTH))>0){
