@@ -1,9 +1,21 @@
 #include "../include/download.h"
 
-
+void extractFilename(struct URL *url) {
+    char filename[MAX_LENGTH];
+    regex_t regex;
+    regmatch_t match;
+    if (regcomp(&regex, "[^/]+$", REG_EXTENDED) != 0) {
+        return;
+    }
+    if (regexec(&regex, url->resource, 1, &match, 0) == 0) {
+        strncpy(filename, url->resource + match.rm_so, match.rm_eo - match.rm_so);
+        filename[match.rm_eo - match.rm_so] = '\0';
+        strcpy(url->filename, filename);
+    }
+    regfree(&regex);
+}
 
 int createSocket(char *ip, int port){
-
     int sockfd;
     struct sockaddr_in server_addr;
     bzero((char*) &server_addr, sizeof(server_addr));
@@ -18,8 +30,6 @@ int createSocket(char *ip, int port){
     {
         exit(-1);
     };
-   // ftp://[<user>:<password>@]<host>/<url-path>
-    
     return sockfd;
 }
 int parseFTP(char *input, struct URL *url) {
@@ -59,7 +69,13 @@ int parseFTP(char *input, struct URL *url) {
     printf("Host: %s\n", url->host);
     printf("User: %s\n", url->user);
     printf("Resource: %s\n", url->resource);
+    char* modifiedResource = (char*) malloc(strlen(url->resource) + 1);
+    sprintf(modifiedResource, "/%s", url->resource);
+    strcpy(url->resource, modifiedResource);
+    printf("Modified Resource: %s\n", url->resource);
     printf("Password: %s\n", url->password);
+    extractFilename(url);
+    printf("Filename: %s\n", url->filename);
     if ((h = gethostbyname(url->host)) == NULL) {
         herror("gethostbyname()");
         return -1;
@@ -67,6 +83,7 @@ int parseFTP(char *input, struct URL *url) {
     strcpy(url->ip, inet_ntoa(*((struct in_addr *) h->h_addr)));
     regfree(&ftp_regex_compiled);
     regfree(&ftp_generic_regex_compiled);
+    free(modifiedResource);
     return 0;
 }
 
@@ -89,34 +106,28 @@ int readResponse(int socket, char *buf){
     int i = 0;
     int responseCode;
     ResponseState state = START;
-    memset(buf, 0, MAX_LENGTH);
+    memset(buf, 0, strlen(buf));    
     printf("Reading response\n");
     while (state != END)
     {
-        printf("Reading byte\n");
         read(socket, &byte, 1);
-        printf("Byte: %c\n", byte);
         switch (state)
         {
         case START:
             if (byte == ' ')
             {
-                printf("Space\n");
                 state = SINGLE;
             }
             else if (byte == '-')
             { 
-                printf("Dash\n");
                 state = MULTIPLE;
             }
            else if (byte == '\n')
             {
-                printf("Newline\n");
                 state = END;
             }
             else
             {
-                printf("Other\n");
                 buf[i++] = byte;
             }
             break;
@@ -243,7 +254,7 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
 
-    if(getResource(socketA, socketB, url.resource)!=RESPONSE_CODE_TRANSFER_COMPLETE){
+    if(getResource(socketA, socketB, url.filename)!=RESPONSE_CODE_TRANSFER_COMPLETE){
         printf("Error getting resource\n");
         exit(-1);
     }

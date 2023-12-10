@@ -23,6 +23,7 @@ struct URL{
     char password[MAX_LENGTH];
     char ip[MAX_LENGTH];
     char resource[MAX_LENGTH];
+    char filename[MAX_LENGTH]; 
 };
 
 typedef enum {
