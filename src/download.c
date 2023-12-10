@@ -54,7 +54,7 @@ int parseFTP(char *input, struct URL *url) {
         url->resource[matches[4].rm_eo - matches[4].rm_so] = '\0';
     } else if (regexec(&ftp_generic_regex_compiled, input, 4, matches, 0) == 0) {
         strcpy(url->user, "anonymous");
-        strcpy(url->password, "password");
+        strcpy(url->password, "anonymous");
         strncpy(url->host, input + matches[1].rm_so, matches[1].rm_eo - matches[1].rm_so);
         url->host[matches[1].rm_eo - matches[1].rm_so] = '\0';
         strncpy(url->resource, input + matches[2].rm_so, matches[2].rm_eo - matches[2].rm_so);
@@ -103,65 +103,18 @@ int passive_mode(const int socket ,char *ip, int *port){
     return 0;
 }
 int readResponse(int socket, char *buf){
-    char byte;
-    int i = 0;
-    int responseCode;
-    ResponseState state = START;
-    memset(buf, 0, MAX_LENGTH_BUFFER);    
-    printf("Reading response\n");
-    while (state != END)
-    {
-        read(socket, &byte, 1);
-        printf("Byte: %c\n", byte);
-        switch (state)
-        {
-        case START:
-            if (byte == ' ')
-            {
-                state = SINGLE;
-            }
-            else if (byte == '-')
-            { 
-                state = MULTIPLE;
-            }
-           else if (byte == '\n')
-            {
-                state = END;
-            }
-            else
-            {
-                buf[i++] = byte;
-            }
-            break;
-        case SINGLE:
-            if (byte == '\n')
-            {
-                state = END;
-            }
-            else
-            {
-                buf[i++] = byte;
-            }
-            break;
-        case MULTIPLE:
-            if (byte == '\n')
-            {
-                state = START;
-                i = 0;
-                memset(buf, 0, MAX_LENGTH_BUFFER);
-
-            }
-            else
-            {
-                buf[i++] = byte;
-            }
-            break;
-        case END:
-            break;
-        default:
-            break;
+    memset(buf, 0, MAX_LENGTH);
+    char* buf_backup = buf;
+    do {
+        unsigned char byte = 0;
+        while(byte != '\n'){
+            read(socket, &byte, 1);
+            *buf = byte;
+            buf++;
         }
-    }  
+        buf = buf_backup;
+    } while (buf[3] == '-');
+    int responseCode;
     sscanf(buf, "%d", &responseCode);
     printf("Buf: %s\n", buf);
     return responseCode;
