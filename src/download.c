@@ -14,7 +14,12 @@ void extractFilename(struct URL *url) {
     }
     regfree(&regex);
 }
-
+void extractAfterLastAt(char *input, char *output) {
+    char *lastAtPosition = strrchr(input, '@');
+    if (lastAtPosition != NULL) {
+        strcpy(output, lastAtPosition + 1);
+    }
+}
 int createSocket(char *ip, int port){
     int sockfd;
     struct sockaddr_in server_addr;
@@ -32,6 +37,7 @@ int createSocket(char *ip, int port){
     };
     return sockfd;
 }
+
 int parseFTP(char *input, struct URL *url) {
     char ftp_regex[] = "ftp://([^:]+):([^@]+)@([^/]+)/(.+)";
     char ftp_generic_regex[] = "ftp://([^/]+)/(.+)";
@@ -53,10 +59,12 @@ int parseFTP(char *input, struct URL *url) {
         strncpy(url->resource, input + matches[4].rm_so, matches[4].rm_eo - matches[4].rm_so);
         url->resource[matches[4].rm_eo - matches[4].rm_so] = '\0';
     } else if (regexec(&ftp_generic_regex_compiled, input, 4, matches, 0) == 0) {
+        
         strcpy(url->user, "anonymous");
         strcpy(url->password, "password");
         strncpy(url->host, input + matches[1].rm_so, matches[1].rm_eo - matches[1].rm_so);
         url->host[matches[1].rm_eo - matches[1].rm_so] = '\0';
+        extractAfterLastAt(url->host, url->host);
         strncpy(url->resource, input + matches[2].rm_so, matches[2].rm_eo - matches[2].rm_so);
         url->resource[matches[2].rm_eo - matches[2].rm_so] = '\0';
     }
