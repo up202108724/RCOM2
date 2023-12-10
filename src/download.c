@@ -89,24 +89,25 @@ int parseFTP(char *input, struct URL *url) {
 
 
 int passive_mode(const int socket ,char *ip, int *port){
-    char answer[MAX_LENGTH];
-    int ip1, ip2, ip3, ip4, port1, port2;
+    char answer[MAX_LENGTH_BUFFER];
+    char passive_regex[]="%*[^(](%d,%d,%d,%d,%d,%d)%*[^\n$)]";
+    int h1, h2, h3, h4, port1, port2;
     write(socket, "pasv\n", 5);
-    if (readResponse(socket, answer) != RESPONSE_CODE_PASSIVE)
+    if (readResponse(socket, answer) != RC_PASSIVE) //227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
     {
         return -1;
     }
-    sscanf(answer, PASSIVE_REGEX, &ip1, &ip2, &ip3, &ip4, &port1, &port2);
+    sscanf(answer, passive_regex, &h1, &h2, &h3, &h4, &port1, &port2);
     *port = port1 * 256 + port2;
-    sprintf(ip, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
-    return RESPONSE_CODE_PASSIVE;
+    sprintf(ip, "%d.%d.%d.%d", h1, h2, h3, h4);
+    return 0;
 }
 int readResponse(int socket, char *buf){
     char byte;
     int i = 0;
     int responseCode;
     ResponseState state = START;
-    memset(buf, 0, MAX_LENGTH);    
+    memset(buf, 0, MAX_LENGTH_BUFFER);    
     printf("Reading response\n");
     while (state != END)
     {
@@ -147,7 +148,7 @@ int readResponse(int socket, char *buf){
             {
                 state = START;
                 i = 0;
-                memset(buf, 0, MAX_LENGTH);
+                memset(buf, 0, MAX_LENGTH_BUFFER);
 
             }
             else
@@ -167,7 +168,7 @@ int readResponse(int socket, char *buf){
 }
 
 int authenticate(int socket, char *user, char *password){
-    char buf[MAX_LENGTH];
+    char buf[MAX_LENGTH_BUFFER];
     char userCommand[5+strlen(user)+1];
     char passCommand[5+strlen(password)+1];
     sprintf(userCommand, "user %s\n", user);
@@ -175,15 +176,15 @@ int authenticate(int socket, char *user, char *password){
     printf("User command: %s\n", userCommand);
     printf("Socket: %d\n", socket);
     write(socket, userCommand, strlen(userCommand));
-    if(readResponse(socket,buf)!=331){exit(-1);} //331 User name okay, need password.
-    memset(buf, 0, MAX_LENGTH);
+    if(readResponse(socket,buf)!=RC_USEROK){exit(-1);} //331 User name okay, need password.
+    memset(buf, 0, MAX_LENGTH_BUFFER);
     write(socket, passCommand, strlen(passCommand));
     return readResponse(socket,buf); //230 User logged in
 }
 
 
 int requestResource(int socket, char *resource){
-    char buf[MAX_LENGTH];
+    char buf[MAX_LENGTH_BUFFER];
     char resourceCommand[5+strlen(resource)+1];
     sprintf(resourceCommand, "retr %s\n", resource);
     write(socket, resourceCommand, strlen(resourceCommand));
@@ -192,9 +193,9 @@ int requestResource(int socket, char *resource){
 
 int getResource(int socketA, int socketB, char *resource){
     FILE *fd = fopen(resource, "wb");
-    char buf[MAX_LENGTH];
+    char buf[MAX_LENGTH_BUFFER];
     int bytes;
-    while((bytes=read(socketB, buf, MAX_LENGTH))>0){
+    while((bytes=read(socketB, buf, MAX_LENGTH_BUFFER))>0){
         if(fwrite(buf, 1, bytes, fd)==0){return -1;}
     }
     fclose(fd);
@@ -202,12 +203,12 @@ int getResource(int socketA, int socketB, char *resource){
 }
 
 int close_connection(const int socketA, const int socketB){
-    char answer[MAX_LENGTH];
+    char answer[MAX_LENGTH_BUFFER];
     write(socketA, "quit\n", 5);
-    if(readResponse(socketA,answer)!=221){return -1;} //221 Service closing control connection.
-    memset(answer, 0, MAX_LENGTH);
+    if(readResponse(socketA,answer)!=SERVICE_CLOSING_CONTROL_CONNECTION){return -1;} //221 Service closing control connection.
+    memset(answer, 0, MAX_LENGTH_BUFFER);
     write(socketB, "quit\n", 5);
-    if(readResponse(socketB,answer)!=221){return -1;} //221 Service closing control connection.
+    if(readResponse(socketB,answer)!=SERVICE_CLOSING_CONTROL_CONNECTION){return -1;} //221 Service closing control connection.
     return 0;
 }
 
@@ -222,24 +223,24 @@ int main(int argc, char *argv[]){
     if (parseFTP(argv[1], &url)!= 0 ){
         exit (-1);
     }
-    char answer[MAX_LENGTH];
+    char answer[MAX_LENGTH_BUFFER];
     int socketA = createSocket(url.ip, 21); //21 is the default port for FTP
     printf("SocketA: %d\n", socketA);
-    if (readResponse(socketA, answer) != 220){
+    if (readResponse(socketA, answer) != RC_SERVICE_READY){
         printf("Error creating socket\n"); // 220 is the response code for connection established
         exit(-1);
     }
     printf("Print going to authenticate\n");
     printf("User: %s\n", url.user);
     printf("Password: %s\n", url.password);
-    if (authenticate(socketA, url.user, url.password) != 230){ // 230 is the response code for authentication successful
+    if (authenticate(socketA, url.user, url.password) != RC_AUTH_SUCCESSFUL){ // 230 is the response code for authentication successful
         printf("Authentication failed, user and password not matching\n");
         exit(-1);
     }
     printf("Print going to passive mode\n");
     int port;
     char ip[16];
-    if (passive_mode(socketA, ip, &port) != RESPONSE_CODE_PASSIVE){
+    if (passive_mode(socketA, ip, &port) != 0){
         exit(-1);
     }
     printf("Ip: %s\n", ip);
@@ -250,12 +251,12 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
 
-    if(requestResource(socketA, url.resource)!=RESPONSE_CODE_READY_FOR_TRANSFER){
+    if(requestResource(socketA, url.resource)!=RC_FILESTATUSOK){//150 File status okay; about to open data connection.
         printf("Error requesting resource\n");
         exit(-1);
     }
 
-    if(getResource(socketA, socketB, url.filename)!=RESPONSE_CODE_TRANSFER_COMPLETE){
+    if(getResource(socketA, socketB, url.filename)!=RC_CLOSINGDATACONNECTION){//226 Closing data connection. Requested file action successful (for example, file transfer or file abort).
         printf("Error getting resource\n");
         exit(-1);
     }
