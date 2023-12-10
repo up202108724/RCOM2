@@ -106,11 +106,12 @@ int readResponse(int socket, char *buf){
     int i = 0;
     int responseCode;
     ResponseState state = START;
-    memset(buf, 0, strlen(buf));    
+    memset(buf, 0, MAX_LENGTH);    
     printf("Reading response\n");
     while (state != END)
     {
         read(socket, &byte, 1);
+        printf("Byte: %c\n", byte);
         switch (state)
         {
         case START:
