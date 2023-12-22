@@ -160,8 +160,7 @@ int close_connection(const int socketA, const int socketB){
     write(socketA, "quit\n", 5);
     if(readResponse(socketA,answer)!=SERVICE_CLOSING_CONTROL_CONNECTION){return -1;} //221 Service closing control connection.
     memset(answer, 0, MAX_LENGTH_BUFFER);
-    write(socketB, "quit\n", 5);
-    if(readResponse(socketB,answer)!=SERVICE_CLOSING_CONTROL_CONNECTION){return -1;} //221 Service closing control connection.
+    close(socketB);
     return 0;
 }
 
@@ -215,13 +214,8 @@ int main(int argc, char *argv[]){
     }
     printf("Resource downloaded successfully\n");
 
-    if (close(socketA)<0) {
-        perror("close()");
-        exit(-1);
-    }
-
-    if (close(socketB)<0) {
-        perror("close()");
+    if (close_connection(socketA, socketB) != 0){
+        printf("Error closing connection\n");
         exit(-1);
     }
     printf("Connection closed\n");
