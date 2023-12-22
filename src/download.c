@@ -160,6 +160,7 @@ int close_connection(const int socketA, const int socketB){
     write(socketA, "quit\n", 5);
     if(readResponse(socketA,answer)!=SERVICE_CLOSING_CONTROL_CONNECTION){return -1;} //221 Service closing control connection.
     memset(answer, 0, MAX_LENGTH_BUFFER);
+    close(socketA);
     close(socketB);
     return 0;
 }
